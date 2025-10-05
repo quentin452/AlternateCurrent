@@ -16,6 +16,14 @@ import java.util.HashMap;
 public class AlternateCurrentHook {
     public static HashMap<WorldServer, WireHandler> wireHandlers = new HashMap<>();
 
+    private static WireHandler getOrCreateWireHandler(World world) {
+        if (world instanceof WorldServer) {
+            WorldServer worldServer = (WorldServer) world;
+            return wireHandlers.computeIfAbsent(worldServer, WireHandler::new);
+        }
+        return null;
+    }
+
     @Hook
     public static void setWorld(DimensionManager c, int id, WorldServer world) {
         if (world != null) {
@@ -31,16 +39,25 @@ public class AlternateCurrentHook {
 
     @Hook(injectOnInvoke = "Lnet/minecraft/block/BlockRedstoneWire;func_150177_e(Lnet/minecraft/world/World;III)V")
     public static void onNeighborBlockChange(BlockRedstoneWire c, World worldIn, int x, int y, int z, Block neighbor) {
-        wireHandlers.get(worldIn).onWireUpdated(new BlockPos(x, y, z));
+        WireHandler handler = getOrCreateWireHandler(worldIn);
+        if (handler != null) {
+            handler.onWireUpdated(new BlockPos(x, y, z));
+        }
     }
 
     @Hook(injectOnInvoke = "Lnet/minecraft/block/BlockRedstoneWire;func_150177_e(Lnet/minecraft/world/World;III)V")
     public static void onBlockAdded(BlockRedstoneWire c, World worldIn, int x, int y, int z) {
-        wireHandlers.get(worldIn).onWireAdded(new BlockPos(x, y, z));
+        WireHandler handler = getOrCreateWireHandler(worldIn);
+        if (handler != null) {
+            handler.onWireAdded(new BlockPos(x, y, z));
+        }
     }
 
     @Hook(injectOnInvoke = "Lnet/minecraft/block/BlockRedstoneWire;func_150177_e(Lnet/minecraft/world/World;III)V")
     public static void breakBlock(BlockRedstoneWire c, World worldIn, int x, int y, int z, Block blockBroken, int meta) {
-        wireHandlers.get(worldIn).onWireRemoved(new BlockPos(x, y, z), new BlockState(blockBroken, meta));
+        WireHandler handler = getOrCreateWireHandler(worldIn);
+        if (handler != null) {
+            handler.onWireRemoved(new BlockPos(x, y, z), new BlockState(blockBroken, meta));
+        }
     }
 }
